@@ -5,7 +5,7 @@ As some of you might not now me yet, my name is Francisco Fortes. I have recentl
 
 ## Technical Skills:
 
-Python, R, SQL, Hadoop, SAP, Tableau, Dataiku, Pentaho Data Integration, NoSQL, Spark and Linux.
+Python, R, SQL, Hadoop, SAP, Tableau, Dataiku, Pentaho Data Integration, NoSQL, Spark, Linux, Photoshop & Lightroom.
 
 
 ### Contact information:

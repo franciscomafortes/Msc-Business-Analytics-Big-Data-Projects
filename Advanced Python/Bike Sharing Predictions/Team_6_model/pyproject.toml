@@ -1,0 +1,11 @@
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "ie_bike_model"
+author = "Group-6"
+author-email = "milan.goetz@student.ie.edu"
+home-page = "https://github.com/IE-Advanced-Python/1-package-ml-model-group-6"
+classifiers = ["License :: OSI Approved :: MIT License"]
+

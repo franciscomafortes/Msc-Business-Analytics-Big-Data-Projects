@@ -1,0 +1,28 @@
+### TAB 1	
+cd /Users/tamaraqassem/Desktop/STOCKS4U
+
+/Users/tamaraqassem/Desktop/kafka_2.12-2.4.0/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic google
+
+/Users/tamaraqassem/Desktop/kafka_2.12-2.4.0/bin/kafka-topics.sh --list --zookeeper localhost:2181
+
+python Utils/producer.py -h
+
+python Utils/producer.py -o goog -t google -p max -d screen
+python Utils/producer.py -o goog -t google -p max -d kafka
+
+### NEW TAB - TAB 2
+influx
+create database stockdatabase
+show databases
+
+### BACK TO TAB 1
+python Utils/consumer.py -t google
+
+### BACK TO TAB 2
+use stockdatabse
+Select * from google
+
+## NOW WE OPEN GRAFANA ON BROWSER 
+http://localhost:3000/
+
+## WE LOGGED IN WITH OUR CREDENTIALS THEN SET UP THE CONNECTION FROM THERE AND START CREATING SOME DASHBOARDS

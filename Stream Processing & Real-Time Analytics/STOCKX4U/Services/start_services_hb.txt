@@ -1,0 +1,9 @@
+# Start services
+
+brew services start grafana >/dev/null
+brew services start kafka >/dev/null
+brew services start zookeeper >/dev/null
+brew services start influxdb >/dev/null
+
+
+echo Grafana, Kafka, Zookeeper, InfluxDB Started!

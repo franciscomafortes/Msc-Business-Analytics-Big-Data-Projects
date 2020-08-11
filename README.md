@@ -10,6 +10,6 @@ Python, R, SQL, Hadoop, SAP, Tableau, Dataiku, Pentaho Data Integration, NoSQL, 
 
 ### Contact information:
 
-If you are interested in any of my projects and want to learn more about any of them, don't hesisate to message me through Github or message me through [Linkedin](https://www.linkedin.com/in/francisco-fortes/)
+If you are interested in any of my projects and want to learn more about any of them, don't hesisate to message me through Github or message me through [Linkedin](https://www.linkedin.com/in/francisco-fortes/).
 
 #### I hope you enjoy my work!

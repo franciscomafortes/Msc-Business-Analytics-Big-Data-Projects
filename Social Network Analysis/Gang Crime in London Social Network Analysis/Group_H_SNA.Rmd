@@ -1,0 +1,181 @@
+---
+title: "Gang Crime in London Social Network Analysis"
+author: "Group H - High Ballers Club"
+date: "2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(ggplot2) # Data visualization
+library(readr) # CSV file I/O, e.g. the read_csv function
+library(igraph) # SNA
+library(dplyr) # Data manipulation & data management
+```
+
+## Getting some plots
+Importing adjacency matrix and attributes table, joining them and trying out a first basic plot to see.
+```{r}
+#import
+adjm <- read.csv('C:/Users/Benji/Desktop/term 2/LONDON_GANG.csv', header=T)
+att<-read.csv('C:/Users/Benji/Desktop/term 2/LONDON_GANG_ATTR.csv', header=T)
+#rename columns and rows as necessary to join
+colnames(att)[1]<-"Name"
+for(i in 1:nrow(att)){
+  colnames(adjm)[i]<-paste0("G",i)
+  rownames(adjm)[i]<-paste0("G",i)
+  att$Name[i]<-paste0("G",i)
+}
+#create graph
+g <- graph.adjacency(as.matrix(adjm), weighted=T, mode = 'undirected')
+#adding attributes to the graph
+for(c in 1:ncol(att)){
+  g<-set_vertex_attr(g,name=colnames(att)[c],index=V(g),value=att[,c])
+}
+#initial plot
+plot(g)
+```
+
+Create a more readable graph with edge weights and other attributes reflected.
+
+```{r}
+#set edge colors and width according to weight
+edgecolors<-c("green","yellow","red","black")
+E(g)$color<-edgecolors[E(g)$weight]
+E(g)$width<-E(g)$weight
+#set vertex size according to number of convictions
+V(g)$size<-V(g)$Convictions * 2
+#set vertex color according to if the gang member is in prison or not
+vcolors<-c("white","orange")
+V(g)$color<-vcolors[V(g)$Prison+1]
+#plot the new graph
+plot(g,layout=layout_on_sphere,main="GRAPH")
+legend(x=-2.2,y=-0.7, title="Relationship",legend=c("Hang-out","Misdemeanor","Felony","Lethal Felony"),lty=1,lwd=1:4,col=edgecolors)
+legend(x=-2.2,y=0.5,legend=c("Not In Prison","In Prison"),pch=21,col="black",pt.bg=vcolors,pt.cex=2)
+legend(x=-2.2,y=0,title=("Convictions"),legend=c("Less","More"),pch=21,col="black",pt.bg="white",pt.cex=c(1,3))
+```
+
+Here we can detect a few outliers with many convictions that currently evade prison.
+We can also see what we can assume are groups that commited felonies with lethal force together, 4 members on the bottom left, 2 on the left, 2 on the bottom right, 3 on the right, 2 on the top right, and 3 near the middle.
+
+To explore the network in more detail, we will graph the top and bottom 10 of betweenness, degree, and closeness centralities.
+
+```{r warning=FALSE}
+#between top 10 graph
+gb<-subgraph(g,colnames(g[,estimate_betweenness(g,cutoff=1000000)>70]))
+plot(gb,layout=layout_in_circle,main="TOP 10 BETWEEN")
+#degree top 10 graph
+gd<-subgraph(g,colnames(g[,igraph::degree(g)>21]))
+plot(gd,layout=layout_in_circle,main="TOP 10 DEGREE")
+#close top 10 graph
+gc<-subgraph(g,colnames(g[,igraph::closeness(g)>0.0085]))
+plot(gc,layout=layout_in_circle,main="TOP 10 CLOSE")
+#between bottom 10 graph
+ngb<-subgraph(g,colnames(g[,estimate_betweenness(g,cutoff=1000000)<.5]))
+plot(ngb,layout=layout_in_circle,main="BOTTOM 10 BETWEEN")
+#degree bottom 10 graph
+ngd<-subgraph(g,colnames(g[,igraph::degree(g)<5]))
+plot(ngd,layout=layout_in_circle,main="BOTTOM 10 DEGREE")
+#close bottom 10 graph
+ngc<-subgraph(g,colnames(g[,igraph::closeness(g)<0.0062]))
+plot(ngc,layout=layout_in_circle,main="BOTTOM 10 CLOSE")
+```
+
+From these six graphs we see what may be self evident to begin with: that members with low centrality don't tend to be connected amongst themselves. The interesting finds come from the members with high centrality:
+
+- Members with high betweenness are highly connected through hang-outs and misdemeanors
+
+- Members with high closeness are similarly connected to those with high betweenness
+
+- Members with high centrality are connected through higher degree crimes than the other groups
+
+**These finds show that small crimes and hanging out help build connections that allow better access to others in the network over more important crimes.**
+
+**We can also see that a select group of members that commit the most heinous crimes are the ones with the highest centrality, giving some insight into who people are banding around and could be leaders.**
+
+## Studying who the main players are
+Finding and graphing special people:
+
+- Gatekeepers: people with low degree and high betweenness
+
+- Highly Visible Figures: people with high degree and low betweenness
+
+- Central Figures: people with high degree and high betweenness
+
+```{r warning=FALSE}
+#finding special people (gatekeepers, central figures, highly visible figures)
+specialpeople<-as.data.frame(matrix(nrow=0,ncol=5))
+for(i in 1:nrow(att)){
+  b1<-F
+  b3<-F
+  d1<-F
+  d3<-F
+  if(estimate_betweenness(g,cutoff=1000000)[i]<summary(estimate_betweenness(g,cutoff=1000000))["1st Qu."]){
+    b1<-T
+  }
+  if(estimate_betweenness(g,cutoff=1000000)[i]>summary(estimate_betweenness(g,cutoff=1000000))["3rd Qu."]){
+    b3<-T
+  }
+  if(igraph::degree(g)[i]<summary(igraph::degree(g))["1st Qu."]){
+    d1<-T
+  }
+  if(igraph::degree(g)[i]>summary(igraph::degree(g))["3rd Qu."]){
+    d3<-T
+  }
+  if(b3&d1){
+    role<-"Gatekeeper"
+  }
+  else if(b1&d3){
+    role<-"Highly Visible Figure"
+  }
+  else if(b3&d3){
+    role<-"Central Figure"
+  }
+  else{
+    role<-"Lame"
+  }
+  specialpeople<-rbind(specialpeople,t(data.frame(x=c(b1,b3,d1,d3,role))))
+}
+colnames(specialpeople)<-c("b1","b3","d1","d3","role")
+rownames(specialpeople)<-att$Name
+sp<-rownames(specialpeople[specialpeople$role!="Lame",])
+
+#special people graph
+spg<-subgraph(g,sp)
+plot(spg,layout=layout_in_circle,main="SPECIAL PEOPLE (Central Figures)")
+```
+
+The first detail to note is that all special people are central figures, there were no gatekeepers or highly visible figures as defined earlier and using the top and bottom quartiles. We can see that it is highly related to top 10 closeness due to many shared nodes, while being slightly different.
+
+**This means our network is not easily divisible (lack of gatekeepers), which means we will turn our focus to gang members who are yet to be convicted to attempt to remove them from special people influence.**
+
+Finding babies: gang members who have not been convicted yet.
+
+```{r warning=FALSE}
+#babies get and graph
+babies<-att$Name[att$Convictions==0]
+bg<-subgraph(g,babies)
+plot(bg,layout=layout_in_circle,main="BABIES")
+```
+
+We can see that most babies are not related amongst themselves, seemingly only having been initiated into gang life with the exception of G24 and G26 which committed a lethal felony and somehow avoided conviction. They committed the crime with G23 and G25, both of which are now in prison, leading us to the conclusion that they probably snitched, and snitches gon' get stitches.
+
+We will now join babies and special people subgraphs to see relationships between them and attempt to remove babies from gang activity.
+
+```{r warning=FALSE}
+#join babies and special people
+spbg<-g
+V(spbg)$Con01<-as.logical(V(spbg)$Convictions)
+spbcol<-c("pink","purple")
+V(spbg)$size<-20
+V(spbg)$color<-spbcol[V(spbg)$Con01+1]
+spb<-subgraph(spbg,c(sp,babies))
+plot(spb,layout=layout_in_circle,main="BABIES & SPECIAL PEOPLE")
+legend(x=-2.2,y=1,legend=c("Baby","Special Person"),pch=21,col="black",pt.bg=spbcol,pt.cex=2)
+legend(x=-2.2,y=-0.7, title="Relationship",legend=c("Hang-out","Misdemeanor","Felony","Lethal Felony"),lty=1,lwd=1:4,col=edgecolors)
+```
+
+From this graph we can see that babies are yet to commit crimes with special people bar the aforementioned two exceptions (G24 and G26). Some babies are highly connected with the special people, such as G28, which will lead to a hard time removing all influence from them. We recommend focusing on babies with few connections to special people such as G43, G47, and G49 who only have 1 or 2 connections and would lend themselves more promptly to be removed from the network to aid their future development into contributing members of society as opposed to criminals.
+
+## Conclusion
+**This gang network is highly connected, with all members that possess high betweenness also possessing at least a decent amount of connections, leading to a lack of gatekeepers or bridge nodes to use to divide the network and attempt to destroy it from the inside. This leads to us recommending pruning nodes that are not yet fully immersed to attempt to stagnate growth as the gang is dismantled one member at a time.**
